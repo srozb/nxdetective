@@ -41,6 +41,9 @@ class DomainResolver(Worker):
         except ValueError:
             l.debug(f"Discarding: {item[0]}")
             return
+        except IndexError:
+            l.debug(f"Skipping line: {item}")
+            return
         l.debug(f"[{self.__nameserver}] Resolving: {domain.name}")
         try:
             resolved = await self.__Resolver.resolve(domain.name, "MX")
