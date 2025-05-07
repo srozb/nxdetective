@@ -1,35 +1,50 @@
 # nxdetective
-Mass resolve 100k domains in less than 5 minutes, report non-existent ones.
+Mass resolve 100k domains in less than 5 minutes and report non-existent ones.
 
-The purpose of this script was to go through the list of every domain found in 
-outbound smtp logs and find those non-existent and therefore ready to be 
-registered by an adversary in order to collect mistakenly addressed emails.
+The purpose of this script is to process a list of domains (e.g., from outbound SMTP logs) and identify non-existent ones. These domains can potentially be registered by adversaries to intercept mistakenly addressed emails.
 
 ![nxdetective in action](docs/action.gif)
 
 ## Requirements
 
-* Python >= `3.7` (`3.8` is recommended)
-* libs from `requirements.txt`
+* Python >= `3.11` (tested with `3.11`)
+* Dependencies listed in `Pipfile`
 
 ## Installation
 
-```bash
-clone this repo
-python3 -m pip install -r requirements.txt
-```
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/your-repo/nxdetective.git
+   cd nxdetective
+   ```
+
+2. Install dependencies using `pipenv`:
+   ```bash
+   pipenv install
+   ```
+
+3. Activate the virtual environment:
+   ```bash
+   pipenv shell
+   ```
 
 ## Usage
 
+Run the script with the following command:
+
 ```bash
-python3 main.py process --nameservers 1.1.1.1,8.8.8.8 --workers_num 5 list.csv
+python3 main.py process --nameservers 1.1.1.1,8.8.8.8 --workers_num 5 --qtype A list.csv
 ```
 
-Will spawn 10 asynchronous tasks (5 for `1.1.1.1` and 5 for `8.8.8.8`) and
-resolve domains read from `list.csv` file. Non-existent domains will be written
-to `report.csv`.
+### Explanation:
+- `--nameservers`: Comma-separated list of DNS nameservers to use (e.g., `1.1.1.1,8.8.8.8`).
+- `--workers_num`: Number of asynchronous tasks per nameserver (e.g., `5` workers per nameserver).
+- `--qtype`: DNS query type to use (e.g., `A`, `MX`, `CNAME`, `TXT`). Default is `A`.
+- `list.csv`: Input CSV file containing the list of domains to resolve.
 
-Example `list.csv`:
+The script will resolve domains from `list.csv` and write non-existent domains to `report.csv`.
+
+### Example `list.csv`:
 
 ```csv
 domain;popularity
@@ -39,7 +54,7 @@ example.cn;3
 e-x-ple.com;1
 ```
 
-_(Note: `popularity` column is mandatory, but values are irrelevant and won't 
-affect script's behaviour). Its only purpose is to indicate subjective 
-popularity of the domain. This is useful if you take a list of domains from http 
-or smtp logs and know exactly how popular it is within your environment._ 
+_(Note: The `popularity` column is mandatory, but its values are irrelevant and do not affect the script's behavior. It is only used to indicate the subjective popularity of the domain, which can be useful when analyzing logs.)_
+
+### Output:
+The results will be saved in `report.csv`, listing all non-existent domains.
