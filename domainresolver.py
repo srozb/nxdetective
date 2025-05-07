@@ -21,8 +21,9 @@ class DomainResolver(Worker):
         self.__nameserver = value
         self.__meta__.entity = self.__nameserver
 
-    def __init__(self, data_source: trio.MemoryReceiveChannel, data_dest: trio.MemorySendChannel):
+    def __init__(self, data_source: trio.MemoryReceiveChannel, data_dest: trio.MemorySendChannel, qtype: str = "A"):
         self.__nameserver = None
+        self.qtype = qtype
         super().__init__(data_source, data_dest)
         self.__meta__.name = "DomainResolver"
         self.__meta__.item_unit = "domains"
@@ -46,7 +47,7 @@ class DomainResolver(Worker):
             return
         l.debug(f"[{self.__nameserver}] Resolving: {domain.name}")
         try:
-            resolved = await self.__Resolver.resolve(domain.name, "MX")
+            resolved = await self.__Resolver.resolve(domain.name, self.qtype)
             domain.answer = resolved.response.answer
             domain.outcome = "OK"
         except Exception as e:

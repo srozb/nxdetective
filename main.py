@@ -11,16 +11,24 @@ from typing import (
 
 import trio
 from loguru import logger as l
+from enum import Enum
 
 from domainresolver import DomainResolver
 from csvreader import CSVReader
 from painter import Painter
 
+class QueryType(str, Enum):
+    A = "A"
+    MX = "MX"
+    CNAME = "CNAME"
+    TXT = "TXT"
+    # Add other valid DNS query types as needed
+
 Domains = trio.open_memory_channel(65536)
 Resolved = trio.open_memory_channel(65536)
 
 
-def create_resolver_workers(nameservers: str = "", workers_num: int = 1) -> List[object]:
+def create_resolver_workers(nameservers: str = "", workers_num: int = 1, qtype: QueryType = QueryType.A) -> List[object]:
     """Create DomainResolver tasks depending on nameservers configured and desired number of workers"""
     Workers = []
     if nameservers:
@@ -29,7 +37,7 @@ def create_resolver_workers(nameservers: str = "", workers_num: int = 1) -> List
         ns_to_use = dns.asyncresolver.get_default_resolver().nameservers
     for i in range(workers_num):
         for ns in ns_to_use:
-            W = DomainResolver(Domains[1], Resolved[0])
+            W = DomainResolver(Domains[1], Resolved[0], qtype=qtype)
             W.nameserver = ns
             W.__meta__.w_id = i
             Workers.append(W)
@@ -55,10 +63,10 @@ def create_painter(workers: List[object]) -> list:
 
 
 async def process(domain_file: str, nameservers: str = "",
-                  workers_num: int = 1, debug=False):
+                  workers_num: int = 1, debug=False, qtype: QueryType = QueryType.A):
     """Process given CSV file, resolve domains and create a report.csv"""
     Workers = []  # TODO: Workers should be global so painter task has always accurate data
-    Workers += create_resolver_workers(nameservers, workers_num)
+    Workers += create_resolver_workers(nameservers, workers_num, qtype)
     Workers += create_csvreader_workers(domain_file)
     Workers += create_reporter_workers("report.csv")
     if not debug:
@@ -74,9 +82,9 @@ async def process(domain_file: str, nameservers: str = "",
 
 
 def main(domain_file: str, nameservers: str = "",
-         workers_num: int = 1, debug: bool = False):
+         workers_num: int = 1, debug: bool = False, qtype: QueryType = QueryType.A):
     """Run asynchronous tasks"""
-    trio.run(process, domain_file, nameservers, workers_num, debug)
+    trio.run(process, domain_file, nameservers, workers_num, debug, qtype)
 
 
 if __name__ == "__main__":

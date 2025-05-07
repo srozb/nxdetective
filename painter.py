@@ -10,7 +10,6 @@ import trio
 from loguru import logger as l
 
 from rich.console import (
-    RenderGroup,
     ConsoleRenderable,
     RichCast
 )
@@ -25,6 +24,7 @@ from rich.progress import (
     TimeRemainingColumn
 )
 from rich.panel import Panel
+from rich.columns import Columns
 
 
 class Painter(BaseModel):
@@ -103,16 +103,22 @@ class Painter(BaseModel):
         """Create and refresh the dashboard every n seconds"""
         while not self.tasks_running():
             await trio.sleep(0.5)
-        with Live(transient=True, refresh_per_second=1) as live, self.create_progress_bar() as progress:
-            task = progress.add_task("resolving")
+
+        progress = self.create_progress_bar()
+        task = progress.add_task("resolving")
+
+        with Live(progress, transient=True, refresh_per_second=1) as live:
             while self.tasks_running():
                 table = await self.generate_tasks_table()
-                pbar = self.generate_progress(progress, task)
+                self.generate_progress(progress, task)
                 statistics = self.generate_statistics()
-                panel_group = RenderGroup(
-                    Panel(table, title="Tasks"),
-                    Panel(pbar, title="Progress"),
-                    Panel(statistics, title="Query statistics")
+
+                panel_group = Columns(
+                    [
+                        Panel(table, title="Tasks"),
+                        Panel(progress.get_renderable(), title="Progress"),
+                        Panel(statistics, title="Query statistics")
+                    ]
                 )
 
                 live.update(panel_group)
