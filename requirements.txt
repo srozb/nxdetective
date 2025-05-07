@@ -1,7 +1,0 @@
-fire>=0.3.0
-rich>=9.4.0
-dnspython>=2.0.0
-tldextract>=3.0.0
-pydantic>=1.7.0
-trio>=0.17
-loguru>=0.5.0
